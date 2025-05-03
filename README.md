@@ -9,7 +9,7 @@ server from the network.
 ## Prerequisites
 Understand that I started this endevor using the default Flatpak installation of Jellyfin available from the Mint Linux Software
 Manager App. That was, as it always seems to be, a mistake. My opinion of Flatpak is pretty well cemented in the, if it's only
-available as a Flatypak consider a different solution, camp.
+available as a Flatpak consider a different solution, camp.
 
 Step 1 of this process is to unisntall that noise, & install from the Jellyfin apt repo https://jellyfin.org/downloads/server as 
 the instructions work on it, but from what I saw early on, not on the Flatpak. I have not gone back to test if that is still the 
