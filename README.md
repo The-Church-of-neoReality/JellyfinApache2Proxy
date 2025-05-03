@@ -58,6 +58,7 @@ This guide assumes you can currently connect directly to your existing Jellyfin 
 On the Dashboard Networking settings. 
 ```
 Set Base URl to: /jellyfin
+Bind to local network address: 10.1.10.250
 Set your LAN scope: 10.1.10.0/24
 Set Known Proxies to the server IP address: 10.1.10.250
 ```
