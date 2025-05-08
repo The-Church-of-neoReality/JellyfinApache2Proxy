@@ -38,7 +38,8 @@ Both Virtual hosts must be resolvable by the Apache server.
 
 ## Jellyfin Virtual Host address. ONLY needs to be resolvable from the Apache server.
 ## Clients don't need to be able to resolve this address.
-## In my case it's the same IP, but I don't see why this wouldn't work if the Apache2 & Jellyfin servers were completely separate.
+## In my case it's the same IP, but I don't see why this wouldn't work if
+## the Apache2 & Jellyfin servers were completely separate.
 10.1.10.250     jellyfin.local  jellyfin
 
 ## IPV6 nonsense, as the entire industry jumped the gun.
