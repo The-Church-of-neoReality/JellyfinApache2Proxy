@@ -37,7 +37,8 @@ Both Virtual hosts must be resolvable by the Apache server.
 10.1.10.250     myserver.local  myserver
 
 ## Jellyfin Virtual Host address. ONLY needs to be resolvable from the Apache server.
-## Clients don't need to be able to resolve this address. In my case it's the same IP.
+## Clients don't need to be able to resolve this address.
+## In my case it's the same IP, but I don't see why this wouldn't work if the Apache2 & Jellyfin servers were completely separate.
 10.1.10.250     jellyfin.local  jellyfin
 
 ## IPV6 nonsense, as the entire industry jumped the gun.
@@ -80,20 +81,22 @@ as much as possible, while including annotation & explanation.
 ** /etc/apache2/sites-available/000-default.conf **
 ```
 ## 000-default.conf
-## Main server virtual host. Responds to everything on port 80 
+## Main server virtual host. Responds to EVERYTHING:80 as myserver.local
 <VirtualHost *:80>
 
 ServerName myserver.local
-ServerAdmin me@wherever.org
 
 ## Notice the document root is set to the default Apache2 directory.
 ## The index.html in this directory is the default Apache page.
-## or this is where your existing website is being run from.
+## or it's the root of your existing website.
 DocumentRoot /var/www/html
 
 ## HTTP is bad, M'kay? Unencrypted traffic simply should not be.
 ## HTTP to HTTPS redirect
 Redirect permanent / https://myserver.local/
+
+ErrorLog ${APACHE_LOG_DIR}/000-default-error.log
+CustomLog ${APACHE_LOG_DIR}/000-default-access.log combined
 
 </VirtualHost>
 
@@ -101,43 +104,40 @@ Redirect permanent / https://myserver.local/
 ** /etc/apache2/sites-available/default-ssl.conf **
 ```
 ## default-ssl.conf
-## Main server SSL virtual host. Responds to everything on port 443.
+## Main server SSL virtual host. Responds to EVERYTHING:443 as myserver.local
 <VirtualHost *:443>
 
 ServerName myserver.local
-ServerAdmin me@wherever.org
 
 ## Notice the document root is set to the default Apache2 directory.
 ## The index.html in this directory is the default Apache page.
+## or the root of your existing website.
 DocumentRoot /var/www/html
 
 SSLEngine on
 Protocols h2 http/1.1
 
+## This is a simple self-signed example, your ssl setup here.
+SSLCertificateFile /etc/ssl/certs/myserver.local.crt
+SSLCertificateKeyFile /etc/ssl/private/myserver.local.key
+
 ## Tell Server to forward requests that came from TLS connections
 RequestHeader set X-Forwarded-Proto "https"
 RequestHeader set X-Forwarded-Port "443"
 
-## This is a simple self-signed example, your ssl setup here, basically.
-SSLCertificateFile /etc/ssl/certs/myserver.local.crt
-SSLCertificateKeyFile /etc/ssl/private/myserver.local.key
-
-## Proxy the directory on main server to the virtual host for the jellyfin server.
+## Enable Proxy Headers
 ProxyAddHeaders On
-ProxyPreserveHost On 
+ProxyPreserveHost On
 
-## jellyfin.local in this example is whatever you used to idetify your jellyfin server in the hosts file.
-ProxyPass "/jellyfin" "ws://jellyfin.local:8096/jellyfin"
-ProxyPassReverse "/jellyfin" "ws://jellyfin.local:8096/jellyfin"
-ProxyPass "/jellyfin" "https://jellyfin.local:8096/jellyfin"
-ProxyPassReverse "/jellyfin" "https://jellyfin.local:8096/jellyfin"
+## Proxy EVERYTHING/jellyfin to the Jellyfin Virtual Host : Port 8096
+## As identified in /etc/hosts
+ProxyPass "/jellyfin" "ws://jellyfin.local:8096"
+ProxyPassReverse "/jellyfin" "ws://jellyfin.local:8096"
+ProxyPass "/jellyfin" "https://jellyfin.local:8096"
+ProxyPassReverse "/jellyfin" "https://jellyfin.local:8096"
 
-ProxyPass "/jellyfin/" "ws://jellyfin.local:8096/jellyfin"
-ProxyPassReverse "/jellyfin/" "ws://jellyfin.local:8096/jellyfin"
-ProxyPass "/jellyfin/" "https://jellyfin.local:8096/jellyfin"
-ProxyPassReverse "/jellyfin/" "https://jellyfin.local:8096/jellyfin"
-
-## Now *:443/jellyfin will be proxied to the Apache Virtual Host for the Jellyfin server.
+ErrorLog ${APACHE_LOG_DIR}/default-ssl-error.log
+CustomLog ${APACHE_LOG_DIR}/default-ssl-access.log combined
 
 ## What follows is the end of the vanillia default-ssl.conf
 <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
@@ -145,7 +145,7 @@ SSLOptions +StdEnvVars
 </FilesMatch>
 
 <Directory /usr/lib/cgi-bin>
-SSLOptions +StdEnvVars
+SSLOptions +StdEnvVars 
 </Directory>
 
 </VirtualHost>
@@ -154,34 +154,35 @@ SSLOptions +StdEnvVars
 ** /etc/apache2/sites-available/420-port8096.conf **
 ```
 ## 420-port8096.conf
-## Jellyfin server SSL virtual host. That responds to everything on port 8096.
+## Jellyfin Server SSL Virtual Host. Responds to https://jellyfin.local:8096 as a Jellyfin Server.
 <IfModule mod_ssl.c>
-<VirtualHost *:8096>
+<VirtualHost jellyfin.local:8096>
 
-## or whatever you used in the hosts file.
 ServerName jellyfin.local
-ServerAdmin me@wherever.org
 
-## !!!Notice!!! the document root is set to a Jellyfin only subdir, outside of the main server's scope.
-## /var/www/jellyfin is empty and owned by jellyfin:jellyfin, so Apache has a legitimate directory to point to.
+## !!!ATTENTION!!!
+## Notice the document root is set to a jellyfin only subdir, outside of the main server's scope.
+## /var/www/jellyfin is an empty directory owned by jellyfin:jellyfin.
+## This is a directory to point the Apache2 config at so it will test valid.
 DocumentRoot /var/www/jellyfin
 
 SSLEngine on
 Protocols h2 http/1.1
 
+## This is a simple self-signed example. Should be replaced with your SSL solution.
+## The Jellyfin Server expects its certs to match the name you gave it in the hosts file.
+SSLCertificateFile /etc/ssl/certs/jellyfin.local.crt
+SSLCertificateKeyFile /etc/ssl/private/jellyfin.local.key
+
 ## Tell Jellyfin to forward requests that came from TLS connections
 RequestHeader set X-Forwarded-Proto "https"
 RequestHeader set X-Forwarded-Port "443"
 
-## This is a simple self-signed example. Should be replaced with your SSL solution.
-## Jellyfin server expects certs to match its hostname...?
-SSLCertificateFile /etc/ssl/certs/jellyfin.local.crt
-SSLCertificateKeyFile /etc/ssl/private/jellyfin.local.key
-
-## Proxy the ROOT / of the Jellyfin Virtual Host to port 8096.
+## Enable Proxy Headers
 ProxyAddHeaders On
 ProxyPreserveHost On
 
+## Proxy / to the Jellyfin port
 ProxyPass "/" "ws://jellyfin.local:8096"
 ProxyPassReverse "/" "ws://jellyfin.local:8096"
 ProxyPass "/" "https://jellyfin.local:8096"
@@ -193,6 +194,9 @@ SSLHonorCipherOrder on
 
 ## Disable insecure SSL and TLS versions
 SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+
+ErrorLog /var/log/apache2/jellyfin.local-ssl-error.log
+CustomLog /var/log/apache2/jellyfin.local-ssl-access.log combined
 
 </VirtualHost>
 </IfModule>
