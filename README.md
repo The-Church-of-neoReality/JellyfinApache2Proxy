@@ -33,7 +33,8 @@ Both Virtual hosts must be resolvable by the Apache server.
 ## loopback, obviously
 127.0.0.1       localhost
 
-## network resolvable webserver address. Of course all clients will have to be able to resolve the webserver.
+## network resolvable webserver address.
+## Of course all clients will have to be able to resolve the webserver.
 10.1.10.250     myserver.local  myserver
 
 ## Jellyfin Virtual Host address. ONLY needs to be resolvable from the Apache server.
@@ -62,7 +63,8 @@ This guide assumes you CAN currently connect directly to your existing Jellyfin 
 On the Dashboard:
 General: 
 ```
-Set your server name to what you put in the server's hosts file to identify the Jellyfin server Virtual Host. 
+Set your server name to what you put in the server's hosts
+file to identify the Jellyfin server Virtual Host. 
 ```
 Networking:
 ```
@@ -155,7 +157,7 @@ SSLOptions +StdEnvVars
 ** /etc/apache2/sites-available/420-port8096.conf **
 ```
 ## 420-port8096.conf
-## Jellyfin Server SSL Virtual Host. Responds to https://jellyfin.local:8096 as a Jellyfin Server.
+## Jellyfin Server SSL Virtual Host. Responds to https://jellyfin.local:8096
 <IfModule mod_ssl.c>
 <VirtualHost jellyfin.local:8096>
 
